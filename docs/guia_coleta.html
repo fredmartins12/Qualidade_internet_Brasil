@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Guia de Coleta de Dados — Qualidade de Internet</title>
+<style>
+  @page { margin: 2.2cm; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #1a1a1a;
+    line-height: 1.5;
+    font-size: 11.5pt;
+  }
+  h1 { font-size: 20pt; color: #0b3d5c; margin-bottom: 0; }
+  .subtitle { color: #555; font-size: 11pt; margin-top: 2px; margin-bottom: 24px; }
+  h2 {
+    font-size: 14pt;
+    color: #0b3d5c;
+    border-bottom: 2px solid #0b9b9b;
+    padding-bottom: 4px;
+    margin-top: 28px;
+  }
+  h3 { font-size: 12pt; color: #0b3d5c; margin-bottom: 4px; }
+  .box {
+    background: #f4f8f9;
+    border-left: 4px solid #0b9b9b;
+    padding: 10px 14px;
+    margin: 12px 0;
+    border-radius: 4px;
+  }
+  .warn {
+    background: #fff6e5;
+    border-left: 4px solid #d99100;
+    padding: 10px 14px;
+    margin: 12px 0;
+    border-radius: 4px;
+  }
+  code, pre {
+    font-family: Consolas, 'Courier New', monospace;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    font-size: 10.5pt;
+  }
+  code { padding: 2px 5px; border-radius: 3px; }
+  pre { padding: 10px 14px; border-radius: 6px; overflow-x: auto; }
+  ol, ul { margin-top: 4px; }
+  li { margin-bottom: 6px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+  th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; font-size: 10.5pt; }
+  th { background: #0b3d5c; color: white; }
+  footer { margin-top: 40px; font-size: 9.5pt; color: #777; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>Guia de Coleta de Dados</h1>
+<div class="subtitle">Qualidade de Internet no Brasil com Dados Abertos (Anatel) — Trabalho de Redes de Computadores, prof. Iguatemi</div>
+
+<h2>1. O que é essa etapa do trabalho</h2>
+<p>
+Para analisar a qualidade da nossa conexão de internet, precisamos de dados próprios — não só dos relatórios públicos (SIMET/Anatel).
+Para isso, montamos um script em Python que envia pacotes de rede para servidores conhecidos (Google e Cloudflare) e mede três coisas:
+</p>
+
+<table>
+  <tr><th>Métrica</th><th>O que significa</th></tr>
+  <tr><td><b>Latência (RTT)</b></td><td>Tempo de ida e volta de um pacote até o servidor, em milissegundos. Quanto menor, melhor.</td></tr>
+  <tr><td><b>Desvio-padrão (stdev)</b></td><td>Dispersão do RTT em torno da média — a métrica clássica usada pelo ping do sistema operacional.</td></tr>
+  <tr><td><b>Jitter</b></td><td>Variação da latência entre um pacote e outro. Jitter alto = conexão instável, ruim para videochamada/jogos.</td></tr>
+  <tr><td><b>Perda de pacotes</b></td><td>Percentual de pacotes que não voltaram (se perderam no caminho). Indica congestionamento ou falha na rede.</td></tr>
+</table>
+
+<div class="box">
+<b>Base teórica:</b> esse script é uma extensão do <i>ICMP Pinger Lab</i> (um dos trabalhos de programação oficiais do livro-texto
+Kurose &amp; Ross, capítulo de ICMP). O lab original pede para montar o pacote ICMP manualmente com socket raw; aqui usamos a
+biblioteca Scapy para fazer a mesma coisa de forma mais robusta, o que permite escalar a coleta (vários alvos, agendamento,
+milhares de amostras) em vez de reimplementar o protocolo byte a byte.
+</div>
+
+<p>
+Essa coleta precisa rodar várias vezes ao longo do dia (de preferência por vários dias), para capturarmos como a qualidade da conexão
+muda em horários diferentes — por exemplo, se piora no "horário de pico" (19h–22h). É esse histórico que depois vamos analisar e comparar
+com os dados do SIMET.
+</p>
+
+<div class="box">
+<b>Resumindo para quem não mexe muito com código:</b> cada pessoa do grupo que puder vai deixar um probleminha (script) rodando no próprio
+computador em segundo plano, a cada 15 minutos, por alguns dias. Ele só gera um arquivo <code>.csv</code> (uma planilha) com números —
+não acessa nada pessoal, não precisa ficar de olho nele.
+</div>
+
+<h2>2. Pré-requisitos (fazer uma vez só)</h2>
+<ol>
+  <li>Ter o <b>Python 3.11+</b> instalado (<a href="https://www.python.org/downloads/">python.org/downloads</a>). Durante a instalação,
+  marcar a caixa <b>"Add Python to PATH"</b>.</li>
+  <li>Instalar o <b>Npcap</b>: <a href="https://npcap.com/#download">npcap.com/#download</a>. Durante a instalação, marcar a opção
+  <i>"Install Npcap in WinPcap API-compatible Mode"</i>. (É o driver que permite o script enviar pacotes de rede diretamente.)</li>
+  <li>Abrir o terminal (PowerShell) <b>como Administrador</b>: clique direito no ícone → "Executar como administrador".</li>
+  <li>Navegar até a pasta do projeto e instalar as dependências:
+  <pre>cd "C:\caminho\para\reds"
+pip install -r requirements.txt</pre>
+  </li>
+</ol>
+
+<h2>3. Testar a coleta manualmente</h2>
+<pre>python coleta\probe.py --targets 8.8.8.8 1.1.1.1 --count 20</pre>
+<p>Se der certo, aparece uma linha no terminal por alvo (média de RTT, jitter, perda) e é criado o arquivo <code>dados\probes.csv</code>.</p>
+
+<div class="warn">
+<b>Atenção:</b> o terminal precisa estar aberto como Administrador. Sem isso, o Scapy não consegue enviar os pacotes
+(erro de permissão) — é a causa mais comum de problema aqui.
+</div>
+
+<h2>4. Deixar a coleta rodando sozinha (Agendador de Tarefas)</h2>
+<p>Para não precisar rodar manualmente toda hora, usamos o Agendador de Tarefas do Windows:</p>
+<ol>
+  <li>Abrir <b>Agendador de Tarefas</b> (pesquisar no menu Iniciar).</li>
+  <li>Clicar em <b>"Criar Tarefa..."</b> (não "Tarefa Básica").</li>
+  <li>Na aba <b>Geral</b>: dar um nome (ex: "Coleta Redes") e marcar <b>"Executar com privilégios mais altos"</b>.</li>
+  <li>Na aba <b>Disparadores</b>: Novo → Diariamente → repetir a tarefa a cada <b>15 minutos</b>, por uma duração de <b>1 dia</b>
+  (assim ela repete indefinidamente).</li>
+  <li>Na aba <b>Ações</b>: Novo → Programa/script → selecionar o arquivo
+  <code>coleta\run_probe.bat</code> (já está pronto na pasta do projeto).</li>
+  <li>Salvar. O Windows vai pedir a senha da sua conta (necessário para rodar com privilégio elevado mesmo com a tela bloqueada).</li>
+</ol>
+
+<h2>5. O que fazer com os dados depois</h2>
+<p>
+Depois de alguns dias de coleta, cada pessoa envia o arquivo <code>dados\probes.csv</code> gerado no seu computador para o grupo
+(pode ser pelo WhatsApp/Drive mesmo). Com isso juntamos as coletas de diferentes locais/redes e rodamos o script de agregação
+(<code>analise\aggregate.py</code>), que organiza tudo por hora do dia — preparando para a etapa de análise e machine learning.
+</p>
+
+<footer>
+Guia gerado para o grupo — Qualidade de Internet no Brasil com Dados Abertos (Anatel)
+</footer>
+
+</body>
+</html>

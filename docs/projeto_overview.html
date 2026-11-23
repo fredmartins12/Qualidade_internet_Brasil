@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Visão Geral do Projeto — Qualidade de Internet no Brasil</title>
+<style>
+  @page { margin: 2.2cm; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #1a1a1a;
+    line-height: 1.5;
+    font-size: 11.5pt;
+  }
+  h1 { font-size: 20pt; color: #0b3d5c; margin-bottom: 0; }
+  .subtitle { color: #555; font-size: 11pt; margin-top: 2px; margin-bottom: 24px; }
+  h2 {
+    font-size: 14pt;
+    color: #0b3d5c;
+    border-bottom: 2px solid #0b9b9b;
+    padding-bottom: 4px;
+    margin-top: 28px;
+  }
+  h3 { font-size: 12pt; color: #0b3d5c; margin-bottom: 4px; }
+  .box {
+    background: #f4f8f9;
+    border-left: 4px solid #0b9b9b;
+    padding: 10px 14px;
+    margin: 12px 0;
+    border-radius: 4px;
+  }
+  .question {
+    background: #eef3fb;
+    border-left: 4px solid #0b3d5c;
+    padding: 10px 14px;
+    margin: 12px 0;
+    border-radius: 4px;
+    font-style: italic;
+  }
+  .step {
+    display: flex;
+    gap: 14px;
+    margin: 14px 0;
+    align-items: flex-start;
+  }
+  .step-num {
+    background: #0b9b9b;
+    color: white;
+    font-weight: bold;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12pt;
+  }
+  .step-content b { color: #0b3d5c; }
+  code {
+    font-family: Consolas, 'Courier New', monospace;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-size: 10.5pt;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+  th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; font-size: 10.5pt; vertical-align: top; }
+  th { background: #0b3d5c; color: white; }
+  .status-feito { color: #137333; font-weight: bold; }
+  .status-pendente { color: #b25400; font-weight: bold; }
+  ul, ol { margin-top: 4px; }
+  li { margin-bottom: 6px; }
+  footer { margin-top: 40px; font-size: 9.5pt; color: #777; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>Visão Geral do Projeto</h1>
+<div class="subtitle">Qualidade de Internet no Brasil com Dados Abertos (Anatel) — Trabalho de Redes de Computadores, prof. Iguatemi</div>
+
+<h2>1. Do que se trata o trabalho</h2>
+<p>
+A internet chegou a praticamente todo o Brasil: segundo o IBGE, em 2025 ela já estava presente em 95% dos domicílios do país.
+Só que <b>ter acesso à internet não é a mesma coisa que ter uma conexão de boa qualidade</b>. As próprias pesquisas oficiais
+(CGI.br/TIC Domicílios) mostram que a qualidade da conexão varia muito dependendo de onde a pessoa mora, do provedor e do
+horário em que ela está usando a rede.
+</p>
+<p>
+Nosso trabalho propõe medir, na prática, essa qualidade — usando métricas técnicas de rede — e descobrir se é possível
+identificar padrões (por exemplo, a internet piora sempre à noite?) e até prever quando a conexão tende a ficar ruim.
+</p>
+
+<div class="question">
+"É possível, a partir de medições próprias e de dados públicos (Anatel, SIMET), identificar padrões de qualidade da
+conexão de internet e até prever momentos de degradação?"
+</div>
+
+<h2>2. Cronograma oficial da disciplina</h2>
+<table>
+  <tr><th>Data</th><th>Entrega</th><th>Situação</th></tr>
+  <tr><td>09/Nov/2026</td><td>Definição do tema (e-mail ao professor)</td><td class="status-feito">Feito</td></tr>
+  <tr><td><b>25/Nov/2026</b></td><td>Prévia — 5 min, mostrar o que já foi implementado</td><td class="status-pendente">Em 2 dias</td></tr>
+  <tr><td>07/Dez/2026</td><td>Apresentação final — 12 min, com demonstração prática obrigatória</td><td class="status-pendente">Em ~2 semanas</td></tr>
+</table>
+<div class="warn" style="background:#fdeaea;border-left-color:#c0392b;">
+<b>Ponto de atenção:</b> a prévia é em 2 dias e ainda não temos dado real coletado. Prioridade imediata do grupo:
+rodar o <code>probe.py</code> de verdade (com Npcap + admin) em pelo menos uma máquina antes de quarta-feira, para
+termos algo ao vivo para mostrar — não precisa ser análise pronta, só a coleta funcionando.
+</div>
+
+<h2>3. Como vamos medir "qualidade de internet"</h2>
+<p>Qualidade de rede não é só "velocidade". Usamos três métricas técnicas, mais fáceis de medir e mais sensíveis a problemas do dia a dia:</p>
+<table>
+  <tr><th>Métrica</th><th>O que é</th><th>Por que importa</th></tr>
+  <tr><td><b>Latência (RTT)</b></td><td>Tempo que um pacote leva para ir até um servidor e voltar</td><td>Afeta a sensação de "demora" ao navegar, jogar, fazer chamada</td></tr>
+  <tr><td><b>Jitter</b></td><td>Variação da latência entre um pacote e outro</td><td>Conexão instável mesmo com velocidade boa — ruim para videochamada/jogos</td></tr>
+  <tr><td><b>Perda de pacotes</b></td><td>% de pacotes que se perdem no caminho</td><td>Sinal de congestionamento de rede ou falha de infraestrutura</td></tr>
+</table>
+
+<h2>4. Como o trabalho vai funcionar, passo a passo</h2>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-content"><b>Coleta própria de dados</b><br>
+  Um script em Python (usando a biblioteca Scapy) envia pacotes de rede para servidores conhecidos (Google, Cloudflare)
+  várias vezes ao longo do dia, em várias máquinas do grupo. Isso gera uma base de dados real da nossa experiência de conexão.
+  Essa etapa é uma extensão do <i>ICMP Pinger Lab</i> — um dos trabalhos de programação oficiais do livro-texto
+  Kurose &amp; Ross, que o próprio enunciado da disciplina recomenda como referência.</div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-content"><b>Organização dos dados</b><br>
+  As medições brutas (uma a cada 15 minutos, por pessoa) são agregadas por hora do dia, calculando médias de latência,
+  jitter e perda — e marcando se é horário de pico (19h–22h) ou não.</div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-content"><b>Análise e visualização</b><br>
+  Gráficos mostrando como a qualidade da conexão varia ao longo do dia e da semana — primeira forma de "ver" os padrões.</div>
+</div>
+
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-content"><b>Machine Learning</b><br>
+  Usar os dados organizados para identificar quando a conexão está degradando. Dado o prazo apertado até a entrega final,
+  a prioridade é um detector simples e confiável (ex: limiar estatístico sobre a média móvel) — um modelo de previsão
+  mais sofisticado fica como extensão futura, só se sobrar tempo depois de algo funcionando estar garantido.</div>
+</div>
+
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-content"><b>Comparação com dados públicos</b><br>
+  Confrontar o que medimos localmente com indicadores oficiais de qualidade de internet no Brasil. Plano principal:
+  <b>dados abertos da Anatel</b> (confirmados como baixáveis em CSV). A comparação com o SIMET/NIC.br entra como
+  complemento, condicionada a uma resposta deles sobre acesso a dados brutos — não é algo para depender como crítico.</div>
+</div>
+
+<h2>5. Onde estamos agora</h2>
+<table>
+  <tr><th>Etapa</th><th>Status</th></tr>
+  <tr><td>Definição do tema e objetivos</td><td class="status-feito">Feito</td></tr>
+  <tr><td>Texto da introdução do trabalho</td><td class="status-feito">Feito</td></tr>
+  <tr><td>Mapeamento das fontes de dados públicos (Anatel, SIMET)</td><td class="status-feito">Feito</td></tr>
+  <tr><td>Script de coleta (RTT, stdev, jitter, perda — Scapy)</td><td class="status-feito">Feito</td></tr>
+  <tr><td>Script de agregação dos dados por hora</td><td class="status-feito">Feito</td></tr>
+  <tr><td><b>Coleta real rodando nas máquinas do grupo</b></td><td class="status-pendente"><b>Urgente — antes da prévia de 25/Nov</b> (ver guia de coleta)</td></tr>
+  <tr><td>Visualizações dos dados coletados</td><td class="status-pendente">Pendente</td></tr>
+  <tr><td>Detector simples de degradação (limiar estatístico)</td><td class="status-pendente">Pendente</td></tr>
+  <tr><td>Comparação com Anatel (plano principal)</td><td class="status-pendente">Pendente</td></tr>
+  <tr><td>Comparação com SIMET (complementar)</td><td class="status-pendente">Pendente — depende de resposta do NIC.br, não é crítico</td></tr>
+  <tr><td>Redação final / roteiro da apresentação</td><td class="status-pendente">Pendente</td></tr>
+</table>
+
+<div class="box">
+<b>O que o grupo precisa fazer agora:</b> cada pessoa configurar o script de coleta no próprio computador
+(instruções no documento "Guia de Coleta de Dados") e deixar rodando por alguns dias, para termos uma base de dados
+real antes de partir para a análise.
+</div>
+
+<footer>
+Visão geral do projeto — Qualidade de Internet no Brasil com Dados Abertos (Anatel)
+</footer>
+
+</body>
+</html>

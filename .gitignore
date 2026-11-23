@@ -1,0 +1,10 @@
+# Dados gerados pela coleta (cada membro gera os seus localmente)
+dados/*.csv
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Config local do Claude Code
+.claude/
