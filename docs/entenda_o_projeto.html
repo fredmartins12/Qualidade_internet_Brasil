@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Entenda o Projeto — Qualidade de Internet</title>
+<style>
+  @page { margin: 2.2cm; }
+  body { font-family: "Segoe UI", Arial, sans-serif; color: #1a1a1a; line-height: 1.55; font-size: 11pt; }
+  h1 { font-size: 20pt; color: #0b3d5c; margin-bottom: 4px; }
+  h2 { font-size: 15pt; color: #0b3d5c; border-bottom: 2px solid #0b9b9b; padding-bottom: 4px; margin-top: 26px; }
+  h3 { font-size: 12.5pt; color: #0b3d5c; margin-top: 18px; margin-bottom: 4px; }
+  hr { border: none; border-top: 1px solid #e0e0e0; margin: 20px 0; }
+  p { margin: 8px 0; }
+  code { font-family: Consolas, "Courier New", monospace; background: #1e1e1e; color: #d4d4d4; padding: 2px 6px; border-radius: 3px; font-size: 10pt; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 10px 14px; border-radius: 6px; overflow-x: auto; font-size: 10pt; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+  th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; font-size: 10pt; vertical-align: top; }
+  th { background: #0b3d5c; color: white; }
+  strong { color: #0b3d5c; }
+</style>
+</head>
+<body>
+<h1>Entenda o Projeto — Guia de Estudo</h1>
+<p>Este documento existe pra você (e o resto do grupo) conseguir explicar o projeto com segurança,
+responder perguntas do professor, e principalmente <strong>entender o porquê</strong> de cada decisão — não só
+decorar o roteiro da apresentação. Vai do zero: assume que você não sabe nada de redes ainda.</p>
+<hr />
+<h2>1. Conceitos de rede que você precisa saber</h2>
+<h3>1.1 O que é um pacote</h3>
+<p>Quando dois computadores "conversam" pela internet, eles não trocam um fluxo contínuo de dados — eles
+trocam <strong>pacotes</strong>: pequenos blocos de informação, cada um com um "envelope" (cabeçalho) dizendo de onde
+veio, pra onde vai, e o que tem dentro. É como mandar uma carta pelo correio: o envelope tem remetente,
+destinatário, e dentro vai o conteúdo.</p>
+<h3>1.2 O que é ICMP e o <code>ping</code></h3>
+<p><strong>ICMP</strong> (Internet Control Message Protocol) é um protocolo criado especificamente para <strong>diagnóstico de
+rede</strong> — não carrega "conteúdo útil" como um vídeo ou uma página web, ele serve só pra perguntar "você
+está aí?" e receber "sim, estou, levei X milissegundos pra responder".</p>
+<p>O comando <code>ping</code>, que você provavelmente já usou ou ouviu falar, funciona exatamente assim:</p>
+<ol>
+<li>Seu computador manda um pacote ICMP do tipo <strong>Echo Request</strong> ("você está aí?") pra um servidor.</li>
+<li>O servidor responde com um ICMP <strong>Echo Reply</strong> ("sim, estou aqui"), ecoando os mesmos dados que recebeu.</li>
+<li>Seu computador mede quanto tempo levou entre mandar e receber a resposta.</li>
+</ol>
+<p>É literalmente isso que o nosso <code>probe.py</code> faz — só que de forma programática, em massa, salvando os
+resultados, em vez de você digitar <code>ping google.com</code> manualmente.</p>
+<h3>1.3 As três métricas que medimos</h3>
+<table>
+<thead>
+<tr>
+<th>Métrica</th>
+<th>O que é</th>
+<th>Analogia</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>RTT (latência)</strong></td>
+<td>Tempo entre mandar o Echo Request e receber o Echo Reply, em milissegundos</td>
+<td>Tempo entre você perguntar algo e a pessoa responder</td>
+</tr>
+<tr>
+<td><strong>Jitter</strong></td>
+<td>O quanto o RTT varia de um pacote pro outro</td>
+<td>Se a pessoa às vezes responde na hora e às vezes demora muito, mesmo em média sendo rápida</td>
+</tr>
+<tr>
+<td><strong>Perda de pacotes</strong></td>
+<td>% de pacotes que você mandou e nunca recebeu resposta</td>
+<td>Perguntas que ficaram "no vácuo"</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Por que essas três, e não só "velocidade"?</strong> Porque uma conexão pode ter velocidade de download boa
+(você baixa um arquivo grande rápido) e ainda assim ser ruim pra videochamada ou jogo online, se o jitter
+for alto ou a perda de pacotes for grande — é justamente isso que os dados do CGI.br mostravam quando
+falavam em "qualidade desigual" mesmo com acesso quase universal.</p>
+<hr />
+<h2>2. Por que isso é tecnicamente difícil (e por que precisa de Scapy/Npcap)</h2>
+<h3>2.1 Sockets normais vs. sockets brutos (raw sockets)</h3>
+<p>Quando um programa comum (seu navegador, por exemplo) manda dados pela rede, ele usa o que se chama
+<strong>socket</strong>: uma interface que o sistema operacional oferece, onde você só diz "manda isso pra esse
+endereço" e o próprio Windows/Linux monta todo o cabeçalho do pacote por trás dos panos, de forma segura.</p>
+<p>Só que pra mandar um pacote <strong>ICMP Echo Request</strong> (o "ping"), ou pra inspecionar pacotes byte a byte, você
+precisa de um <strong>socket bruto (raw socket)</strong> — onde VOCÊ monta o pacote inteiro, cabeçalho incluso, igual
+um carteiro que em vez de só entregar a carta, também escreve o envelope do zero.</p>
+<p>Isso é poderoso, mas perigoso (dá pra forjar pacotes, fazer varreduras de rede, etc.), então os sistemas
+operacionais <strong>restringem esse poder a processos com privilégio de administrador</strong>. É por isso que, sem o
+Npcap, nosso script exigia rodar como admin.</p>
+<h3>2.2 O que é o Scapy</h3>
+<p><strong>Scapy</strong> é uma biblioteca Python que faz exatamente esse trabalho de "montar o pacote na mão" por você —
+ela sabe construir o cabeçalho ICMP (tipo, código, checksum, etc.) e cuidar de mandar/receber, então o
+nosso código só precisa dizer <code>IP(dst=alvo)/ICMP()</code> e o Scapy monta tudo.</p>
+<h3>2.3 O que é o Npcap (e por que resolveu nosso problema de admin)</h3>
+<p><strong>Npcap</strong> é um driver pro Windows (sucessor do antigo WinPcap) que dá acesso de baixo nível à placa de
+rede de um jeito mais seguro e controlado que o acesso "nativo" do Windows. Quando o Scapy usa o Npcap em
+vez do socket nativo do Windows, ele consegue mandar e receber pacotes <strong>sem precisar de admin total</strong> —
+foi exatamente isso que resolveu o bug que tivemos (o script "funcionava" mas não gerava dado nenhum
+quando rodava via Agendador de Tarefas, porque o Windows bloqueava silenciosamente o socket nativo).</p>
+<hr />
+<h2>3. A base teórica acadêmica do projeto</h2>
+<h3>3.1 O ICMP Pinger Lab</h3>
+<p>O site oficial do livro-texto da disciplina (Kurose &amp; Ross, <em>Redes de Computadores e a Internet</em>) lista
+três trabalhos de programação oficiais, e um deles é o <strong>ICMP Pinger Lab</strong>: o exercício pede exatamente
+pra você implementar seu próprio "ping" em Python, manualmente, usando socket bruto.</p>
+<p><strong>O nosso projeto é uma extensão direta desse lab.</strong> A diferença é que o lab oficial pede pra montar o
+cabeçalho ICMP byte a byte na mão (campo "tipo", "código", calcular o checksum, etc.), e nós usamos o
+Scapy pra fazer essa parte, porque nosso foco não é provar que sabemos montar um cabeçalho ICMP — é
+<strong>escalar a coleta</strong> (múltiplos alvos, rodando continuamente, milhares de amostras) e fazer análise de
+dados em cima disso. Isso é uma decisão de engenharia válida, não um atalho pra fugir do trabalho difícil.</p>
+<h3>3.2 Se o professor perguntar "por que não fizeram na mão?"</h3>
+<p>Essa é literalmente a resposta do parágrafo acima. Vale até mostrar que vocês conhecem o que tem "por
+baixo": o cabeçalho ICMP tem os campos <strong>Type</strong> (8 = Echo Request, 0 = Echo Reply), <strong>Code</strong>, <strong>Checksum</strong>
+(verificação de erro), <strong>Identifier</strong> e <strong>Sequence Number</strong> (pra casar pergunta com resposta). O Scapy
+preenche tudo isso automaticamente quando você escreve <code>ICMP()</code>.</p>
+<hr />
+<h2>4. Nossa arquitetura, passo a passo (o porquê de cada peça)</h2>
+<p><code>1. COLETA  →  2. AGREGAÇÃO  →  3. VISUALIZAÇÃO  →  4. DETECÇÃO  →  5. COMPARAÇÃO
+(probe.py)    (aggregate.py)    (pendente)         (pendente)      (pendente)</code></p>
+<h3>4.1 Coleta (<code>probe.py</code>) — já pronto e funcionando</h3>
+<p>O script manda um Echo Request pra cada alvo (Google <code>8.8.8.8</code> e Cloudflare <code>1.1.1.1</code>), repete várias
+vezes seguidas (padrão: 20 vezes), e no final calcula:</p>
+<ul>
+<li><strong>Quantos pacotes voltaram</strong> → vira a métrica de perda</li>
+<li><strong>Qual foi o tempo de ida-e-volta de cada um</strong> → vira RTT médio, mínimo, máximo e desvio-padrão</li>
+<li><strong>Quanto o RTT variou entre um pacote e o próximo</strong> → vira o jitter</li>
+</ul>
+<p>Tudo isso é salvo numa linha de um arquivo CSV (uma planilha), com data e hora.</p>
+<p><strong>Por que rodar em loop, de 15 em 15 minutos, por vários dias?</strong> Porque a pergunta central do projeto é
+"a qualidade da conexão muda dependendo do horário?" — isso só dá pra responder com um <strong>histórico</strong>, não
+com uma medição única. Uma medição isolada só diz "agora está bom ou ruim"; muitas medições ao longo do
+tempo dizem "costuma piorar às 20h" ou "não tem padrão nenhum".</p>
+<h3>4.2 Agregação (<code>aggregate.py</code>) — já pronto e testado</h3>
+<p>Com centenas de linhas no CSV (uma a cada 15 min), fica difícil enxergar padrão olhando linha por linha.
+Esse script agrupa as medições <strong>por hora do dia</strong>, calculando a média de RTT/jitter/perda naquela hora, e
+adiciona informações extras que vão ajudar a análise depois:</p>
+<ul>
+<li><code>hora_dia</code>: 0 a 23 (em que hora do dia foi aquela medição)</li>
+<li><code>dia_semana</code>: segunda, terça, etc.</li>
+<li><code>horario_pico</code>: verdadeiro/falso, se foi entre 19h e 22h</li>
+</ul>
+<p>Isso transforma "um monte de números soltos" em algo que dá pra comparar — por exemplo, "a média de RTT
+às 20h é maior que a média às 10h?".</p>
+<h3>4.3 O que ainda falta (e por quê)</h3>
+<ul>
+<li><strong>Visualização</strong>: gráficos mostrando RTT/jitter/perda ao longo do dia — é a forma mais simples de
+  "enxergar" se existe um padrão, antes de qualquer modelo mais sofisticado.</li>
+<li><strong>Detecção de degradação</strong>: em vez de um modelo de machine learning complexo, a ideia é algo simples e
+  confiável — por exemplo, calcular a média móvel do RTT e marcar como "degradado" quando um valor foge
+  muito da média (um "limiar estatístico"). Isso é mais fácil de explicar, de confiar no resultado, e de
+  demonstrar ao vivo do que um modelo de previsão complexo.</li>
+<li><strong>Comparação com dados públicos</strong>: confrontar nossa média de RTT/qualidade com os indicadores da Anatel
+  (plano principal, dados já confirmados como baixáveis) e do SIMET/NIC.br (complementar, se eles
+  responderem sobre acesso a dado bruto) — serve pra dizer "nossa medição bate com o cenário nacional?"</li>
+</ul>
+<hr />
+<h2>5. Glossário rápido (consulta durante perguntas)</h2>
+<table>
+<thead>
+<tr>
+<th>Termo</th>
+<th>Definição em uma frase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ICMP</strong></td>
+<td>Protocolo usado só para diagnóstico de rede (é o que o <code>ping</code> usa)</td>
+</tr>
+<tr>
+<td><strong>RTT</strong></td>
+<td>Tempo de ida e volta de um pacote (latência)</td>
+</tr>
+<tr>
+<td><strong>Jitter</strong></td>
+<td>Variação do RTT entre pacotes consecutivos</td>
+</tr>
+<tr>
+<td><strong>Perda de pacotes</strong></td>
+<td>% de pacotes que não tiveram resposta</td>
+</tr>
+<tr>
+<td><strong>Socket</strong></td>
+<td>Interface que um programa usa pra mandar/receber dados pela rede</td>
+</tr>
+<tr>
+<td><strong>Raw socket</strong></td>
+<td>Socket de baixo nível onde você monta o pacote inteiro manualmente</td>
+</tr>
+<tr>
+<td><strong>Scapy</strong></td>
+<td>Biblioteca Python que monta e envia pacotes de rede</td>
+</tr>
+<tr>
+<td><strong>Npcap</strong></td>
+<td>Driver do Windows que permite capturar/enviar pacotes sem precisar de admin total</td>
+</tr>
+<tr>
+<td><strong>Desvio-padrão (stdev)</strong></td>
+<td>O quanto os valores de RTT, em média, se afastam da média geral</td>
+</tr>
+<tr>
+<td><strong>Dados abertos</strong></td>
+<td>Dados públicos disponibilizados por órgãos (Anatel, IBGE, etc.) para qualquer um consultar</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>6. Perguntas que o professor pode fazer — e como responder</h2>
+<p><strong>"Por que ICMP e não TCP/UDP?"</strong>
+ICMP é o protocolo padrão de diagnóstico (é o que o <code>ping</code> usa), e é literalmente o que o ICMP Pinger Lab
+do livro trabalha — faz sentido como ponto de partida pra medir qualidade de conexão.</p>
+<p><strong>"Scapy não é meio 'fazer tudo por você'? Vocês entendem o que tá por baixo?"</strong>
+Sim — o cabeçalho ICMP tem Type, Code, Checksum, Identifier e Sequence Number; o Scapy só preenche isso
+automaticamente. Decidimos usar porque o foco do projeto é escalar a coleta e fazer análise de dados, não
+reimplementar o protocolo byte a byte.</p>
+<p><strong>"Por que medir de 15 em 15 minutos e não só uma vez?"</strong>
+Porque a pergunta de pesquisa é sobre variação ao longo do tempo (ex: horário de pico), e isso só aparece
+com uma série histórica de medições, não com uma medição isolada.</p>
+<p><strong>"O que vocês fazem se a conexão cair de vez (perda 100%)?"</strong>
+O script registra isso normalmente: a linha fica com <code>loss_pct = 100</code> e RTT vazio — é um dado válido
+(significa "rede fora do ar naquele momento"), não um erro.</p>
+<p><strong>"Qual a diferença entre jitter e desvio-padrão, já que os dois 'medem variação'?"</strong>
+Desvio-padrão olha a dispersão de <strong>todos</strong> os valores em torno da média. Jitter olha a diferença entre
+<strong>cada par de medições consecutivas</strong> — é mais sensível a oscilações rápidas, momento a momento.</p>
+</body>
+</html>

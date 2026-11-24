@@ -68,6 +68,10 @@ temporais (`hora_dia`, `dia_semana`, `horario_pico` — flag para 19h-22h) para 
 - [`docs/introducao.md`](docs/introducao.md) — contextualização, problema, objetivos
 - [`docs/projeto_overview.pdf`](docs/projeto_overview.pdf) — visão geral, etapas e status atual
 - [`docs/guia_coleta.pdf`](docs/guia_coleta.pdf) — guia de instalação/coleta para o grupo
+- [`docs/entenda_o_projeto.pdf`](docs/entenda_o_projeto.pdf) — guia de estudo: conceitos de rede, base
+  teórica (ICMP Pinger Lab) e o porquê de cada decisão, do zero
+- [`docs/roteiro_previa.pdf`](docs/roteiro_previa.pdf) — roteiro de fala para a prévia (5 min)
+- [`docs/apresentacao_previa.pptx`](docs/apresentacao_previa.pptx) — slides da prévia
 - [`docs/enunciado-oficial.pdf`](docs/enunciado-oficial.pdf) — especificação da disciplina
 
 ## Próximos passos

@@ -9,3 +9,7 @@ __pycache__/
 
 # Config local do Claude Code
 .claude/
+
+# Arquivos de lock do Office
+~$*.pptx
+~$*.docx
