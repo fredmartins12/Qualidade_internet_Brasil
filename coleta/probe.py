@@ -1,15 +1,21 @@
 """Sondagem ativa de latencia, jitter e perda de pacotes via ICMP (Scapy).
 
-Requer privilegios de administrador (raw sockets) e Npcap instalado no Windows.
+Requer Npcap instalado no Windows (nao precisa rodar como administrador).
 Uso:
     python probe.py --targets 8.8.8.8 1.1.1.1 --count 20 --output ../dados/probes.csv
+    python probe.py --loop-minutes 15   # repete indefinidamente, a cada 15 min
 """
 
 import argparse
 import csv
 import os
 import statistics
+import time
 from datetime import datetime, timezone
+
+from scapy.config import conf
+
+conf.use_pcap = True  # usa o Npcap em vez do socket nativo do Windows (dispensa admin)
 
 from scapy.all import ICMP, IP, sr1
 
@@ -73,21 +79,34 @@ def append_to_csv(path: str, row: dict) -> None:
         writer.writerow(row)
 
 
+def run_round(targets: list[str], count: int, timeout: float, output: str) -> None:
+    for target in targets:
+        rtts = send_probes(target, count, timeout)
+        row = build_row(target, count, rtts)
+        append_to_csv(output, row)
+        print(f"{row['timestamp']} {target}: "
+              f"avg={row['rtt_avg_ms']}ms stdev={row['rtt_stdev_ms']}ms "
+              f"jitter={row['jitter_ms']}ms loss={row['loss_pct']}%")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--targets", nargs="+", default=DEFAULT_TARGETS)
     parser.add_argument("--count", type=int, default=20, help="pacotes por alvo")
     parser.add_argument("--timeout", type=float, default=1.0, help="timeout por pacote (s)")
     parser.add_argument("--output", default="../dados/probes.csv")
+    parser.add_argument("--loop-minutes", type=float, default=None,
+                         help="se definido, repete a coleta a cada N minutos indefinidamente")
     args = parser.parse_args()
 
-    for target in args.targets:
-        rtts = send_probes(target, args.count, args.timeout)
-        row = build_row(target, args.count, rtts)
-        append_to_csv(args.output, row)
-        print(f"{row['timestamp']} {target}: "
-              f"avg={row['rtt_avg_ms']}ms stdev={row['rtt_stdev_ms']}ms "
-              f"jitter={row['jitter_ms']}ms loss={row['loss_pct']}%")
+    if args.loop_minutes is None:
+        run_round(args.targets, args.count, args.timeout, args.output)
+        return
+
+    print(f"Coletando a cada {args.loop_minutes} min. Ctrl+C para parar.")
+    while True:
+        run_round(args.targets, args.count, args.timeout, args.output)
+        time.sleep(args.loop_minutes * 60)
 
 
 if __name__ == "__main__":

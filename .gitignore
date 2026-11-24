@@ -1,5 +1,6 @@
 # Dados gerados pela coleta (cada membro gera os seus localmente)
 dados/*.csv
+dados/*.txt
 
 # Python
 __pycache__/
