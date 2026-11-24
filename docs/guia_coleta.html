@@ -94,35 +94,34 @@ não acessa nada pessoal, não precisa ficar de olho nele.
   <li>Ter o <b>Python 3.11+</b> instalado (<a href="https://www.python.org/downloads/">python.org/downloads</a>). Durante a instalação,
   marcar a caixa <b>"Add Python to PATH"</b>.</li>
   <li>Instalar o <b>Npcap</b>: <a href="https://npcap.com/#download">npcap.com/#download</a>. Durante a instalação, marcar a opção
-  <i>"Install Npcap in WinPcap API-compatible Mode"</i>. (É o driver que permite o script enviar pacotes de rede diretamente.)</li>
-  <li>Abrir o terminal (PowerShell) <b>como Administrador</b>: clique direito no ícone → "Executar como administrador".</li>
-  <li>Navegar até a pasta do projeto e instalar as dependências:
+  <i>"Install Npcap in WinPcap API-compatible Mode"</i>. (É o driver que permite o script enviar pacotes de rede sem precisar de
+  privilégio de administrador.)</li>
+  <li>Abrir um terminal normal (PowerShell ou cmd — <b>não precisa ser como Administrador</b>) e instalar as dependências:
   <pre>cd "C:\caminho\para\reds"
 pip install -r requirements.txt</pre>
   </li>
 </ol>
 
-<h2>3. Testar a coleta manualmente</h2>
-<pre>python coleta\probe.py --targets 8.8.8.8 1.1.1.1 --count 20</pre>
-<p>Se der certo, aparece uma linha no terminal por alvo (média de RTT, jitter, perda) e é criado o arquivo <code>dados\probes.csv</code>.</p>
-
-<div class="warn">
-<b>Atenção:</b> o terminal precisa estar aberto como Administrador. Sem isso, o Scapy não consegue enviar os pacotes
-(erro de permissão) — é a causa mais comum de problema aqui.
+<div class="box">
+<b>Importante:</b> com o Npcap instalado, o script já roda num terminal comum — não precisa abrir nada como Administrador.
+Se mesmo assim aparecer um erro de permissão mencionando "Windows native L3 Raw sockets", o motivo quase sempre é o Npcap
+não estar instalado ainda (volte ao passo acima).
 </div>
 
-<h2>4. Deixar a coleta rodando sozinha (Agendador de Tarefas)</h2>
-<p>Para não precisar rodar manualmente toda hora, usamos o Agendador de Tarefas do Windows:</p>
-<ol>
-  <li>Abrir <b>Agendador de Tarefas</b> (pesquisar no menu Iniciar).</li>
-  <li>Clicar em <b>"Criar Tarefa..."</b> (não "Tarefa Básica").</li>
-  <li>Na aba <b>Geral</b>: dar um nome (ex: "Coleta Redes") e marcar <b>"Executar com privilégios mais altos"</b>.</li>
-  <li>Na aba <b>Disparadores</b>: Novo → Diariamente → repetir a tarefa a cada <b>15 minutos</b>, por uma duração de <b>1 dia</b>
-  (assim ela repete indefinidamente).</li>
-  <li>Na aba <b>Ações</b>: Novo → Programa/script → selecionar o arquivo
-  <code>coleta\run_probe.bat</code> (já está pronto na pasta do projeto).</li>
-  <li>Salvar. O Windows vai pedir a senha da sua conta (necessário para rodar com privilégio elevado mesmo com a tela bloqueada).</li>
-</ol>
+<h2>3. Testar a coleta manualmente</h2>
+<pre>python coleta\probe.py --targets 8.8.8.8 1.1.1.1 --count 20</pre>
+<p>Se der certo, aparece uma linha no terminal por alvo (média de RTT, stdev, jitter, perda) e é criado o arquivo <code>dados\probes.csv</code>.</p>
+
+<h2>4. Deixar a coleta rodando sozinha</h2>
+<p>
+Pra capturar a variação ao longo do dia, é só dar <b>dois cliques</b> em <code>coleta\run_probe.bat</code> e deixar a janela
+aberta (pode minimizar). Ele roda a coleta a cada 15 minutos, sozinho, enquanto a janela estiver aberta — sem precisar de
+Agendador de Tarefas nem senha de administrador. Pra parar, é só fechar a janela ou apertar Ctrl+C.
+</p>
+<div class="warn">
+<b>Atenção:</b> diferente de um serviço do Windows, isso só roda enquanto a janela estiver aberta e o PC ligado. Se puder,
+deixe rodando à noite (19h–22h é justamente o horário de pico que o projeto quer capturar).
+</div>
 
 <h2>5. O que fazer com os dados depois</h2>
 <p>

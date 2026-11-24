@@ -211,8 +211,8 @@ def slide_status(prs):
     s = new_slide(prs)
     add_header(s, "Onde estamos", "O que já foi implementado")
     feitos = [
-        "Script de coleta (RTT, stdev, jitter, perda) rodando via ICMP/Scapy",
-        "Agendamento automático (Agendador de Tarefas) — coleta já está em execução",
+        "Script de coleta (RTT, stdev, jitter, perda) rodando via ICMP/Scapy + Npcap",
+        "Coleta em loop contínuo (15 em 15 min), sem precisar de admin — já em execução",
         "Script de agregação horária implementado e testado",
         "Repositório no GitHub organizado e documentado",
     ]
